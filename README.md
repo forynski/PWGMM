@@ -24,6 +24,11 @@ These histograms correspond to the **reconstructed tracks** from the detector, f
   - **ptSpectrumKaonCombinedPID**
   - **ptSpectrumProtonCombinedPID**
   - **ptSpectrumElectronCombinedPID**
+- **Bayesian PID histograms** (TPC + TOF, probabilistic assignment):
+  - **ptSpectrumPionBayesianPID**
+  - **ptSpectrumKaonBayesianPID**
+  - **ptSpectrumProtonBayesianPID**
+  - **ptSpectrumElectronBayesianPID**
 - Particle-specific histograms:
   - **ptHistogramPion/Kaon/Proton/Electron**: Reconstructed $p_T$ for each species
   - **dEdxPion/Kaon/Proton/Electron**: $dE/dx$ vs $p_T$ for identified particles
@@ -59,6 +64,7 @@ The associated analysis task ([myExampleTaskPID.cxx](myExampleTaskPID.cxx)) incl
    - TPC signal ($dE/dx$) vs momentum
    - $n\sigma$ separation for pions, kaons, protons, electrons (TPC and TOF)
    - Configurable PID cuts for flexibility (via JSON)
+   - **Bayesian PID using combined detector response and species priors**
 3. Extended physics observables:
    - $\beta$ and mass via TOF-based PID
    - $\theta$ from $\eta$, charge histograms
@@ -83,11 +89,33 @@ The associated analysis task ([myExampleTaskPID.cxx](myExampleTaskPID.cxx)) incl
 | `nTracksPerCollision`, `nPionsPerCollision`   |                       |
 | `nKaonsPerCollision`, `nProtonsPerCollision`  |                       |
 | `nElectronsPerCollision` |                                            |
+| `ptSpectrum*BayesianPID` |                                            |
 
 ## Key Notes:
-- The analysis is structured using O2Physics PID helpers (`pidTPC`, `pidTOF`, `pidTOFmass`, `pidTOFbeta`)
+- The analysis is structured using O2Physics PID helpers (`pidTPC`, `pidTOF`, `pidTOFmass`, `pidTOFbeta`, `pidBayesian`)
 - Supports both single-detector and combined (TPC + TOF) PID
 - Mass estimation relies on TOF-based $\beta$ with momentum using $m = p\sqrt{1/\beta^2 - 1}$
 - Histogram binning and selection cuts are configurable using `Configurable<>` settings in JSON
 - Full-track vs selected-track histograms aid in assessing the effect of selection criteria
 - Per-collision particle statistics allow monitoring particle production per event for performance studies
+- Bayesian PID enables probabilistic species assignment using detector response functions and user-defined priors
+
+### Bayesian PID: Key Formula
+For each species $H_i$ (e.g., $\pi$, K, p, e), the Bayesian posterior probability is given by:
+$$
+P(H_i \mid \vec{S}) = \frac{P(\vec{S} \mid H_i) \cdot C(H_i)}{\sum_k P(\vec{S} \mid H_k) \cdot C(H_k)}
+$$
+Where:
+- $\vec{S}$ is the vector of detector PID signals (e.g., TPC $dE/dx$, TOF time)
+- $P(\vec{S} \mid H_i)$ is the likelihood of observing the signals given species $H_i$
+- $C(H_i)$ is the prior probability for species $H_i$
+
+Assuming Gaussian detector responses, the likelihood for each detector $\alpha$ (TPC or TOF) is:
+$$
+P(S_\alpha \mid H_i) \propto \exp\left(-\frac{1}{2} n\sigma_{i,\alpha}^2\right)
+$$
+Thus, the combined likelihood (assuming independence) becomes:
+$$
+P(\vec{S} \mid H_i) \propto \exp\left(-\frac{1}{2} \left[n\sigma_{i,\text{TPC}}^2 + n\sigma_{i,\text{TOF}}^2\right]\right)
+$$
+These $n\sigma$ values are computed by O2Physics and used directly in the Bayesian PID calculation.

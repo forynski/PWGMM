@@ -141,7 +141,30 @@ struct myExampleTaskPid {
     histos.add("dEdxProton", "dE/dx for Protons", kTH2F, {axisPt, axisdEdx});
     histos.add("dEdxElectron", "dE/dx for Electrons", kTH2F, {axisPt, axisdEdx});
 
+    histos.add("ptSpectrumPionBayes", "Bayesian PID #pi;p_{T} (GeV/c);Counts", kTH1F, {axisPt});
+    histos.add("ptSpectrumKaonBayes", "Bayesian PID K;p_{T} (GeV/c);Counts", kTH1F, {axisPt});
+    histos.add("ptSpectrumProtonBayes", "Bayesian PID p;p_{T} (GeV/c);Counts", kTH1F, {axisPt});
+    histos.add("ptSpectrumElectronBayes", "Bayesian PID e;p_{T} (GeV/c);Counts", kTH1F, {axisPt});
+
+
   }
+
+  // Compute Bayesian probabilities for each species
+  void computeBayesianPID(float nsTPC[4], float nsTOF[4], float priors[4], float probs[4]) {
+    float sum = 0.f;
+    for (int i = 0; i < 4; ++i) {
+      // For tracks without TOF, set nsTOF[i]=0 or ignore that term
+      float nsTOF2 = std::isfinite(nsTOF[i]) ? nsTOF[i]*nsTOF[i] : 0.f;
+      float likelihood = std::exp(-0.5f * (nsTPC[i]*nsTPC[i] + nsTOF2));
+      probs[i] = likelihood * priors[i];
+      sum += probs[i];
+    }
+    // Normalize
+    for (int i = 0; i < 4; ++i) {
+      probs[i] = (sum > 0) ? probs[i]/sum : 0.f;
+    }
+  }
+
 
   // Process reconstructed tracks with TPC PID information
   // Fills histograms for nSigma distributions, TPC dE/dx vs pT, and PID-selected pT spectra for pions, kaons, protons, and electrons
@@ -197,6 +220,36 @@ struct myExampleTaskPid {
     histos.fill(HIST("chargeHistogram"), charge);
     if (beta > 0.3f && mass > 0.0f) {
       histos.fill(HIST("massHistogram"), mass);
+    }
+
+    float nsTPC[4] = {track.tpcNSigmaPi(), track.tpcNSigmaKa(), track.tpcNSigmaPr(), track.tpcNSigmaEl()};
+    float nsTOF[4] = {track.tofNSigmaPi(), track.tofNSigmaKa(), track.tofNSigmaPr(), track.tofNSigmaEl()};
+
+    // Example flat priors (π, K, p, e)
+    float priors[4] = {1.0f, 0.2f, 0.1f, 0.05f};
+    float probs[4] = {0.f};
+
+    computeBayesianPID(nsTPC, nsTOF, priors, probs);
+
+    // Find species with maximum probability
+    int maxSpecies = 0;
+    float maxProb = probs[0];
+    for (int i = 1; i < 4; ++i) {
+      if (probs[i] > maxProb) {
+        maxProb = probs[i];
+        maxSpecies = i;
+      }
+    }
+
+    // Example: fill histogram if max probability above threshold (e.g., >0.5)
+    // float pt = track.pt();
+    if (maxProb > 0.5f) {
+      switch (maxSpecies) {
+        case 0: histos.fill(HIST("ptSpectrumPionBayes"), pt); break;
+        case 1: histos.fill(HIST("ptSpectrumKaonBayes"), pt); break;
+        case 2: histos.fill(HIST("ptSpectrumProtonBayes"), pt); break;
+        case 3: histos.fill(HIST("ptSpectrumElectronBayes"), pt); break;
+      }
     }
 
     // Fill histograms for TPC dE/dx vs pT
