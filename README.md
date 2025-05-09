@@ -108,22 +108,24 @@ The associated analysis task ([myExampleTaskPID.cxx](myExampleTaskPID.cxx)) incl
 | **Bayesian (max)**   | Uses all detectors, selects highest probability species | Higher purity, combines detector information |
 | **Bayesian (weighted)** | Fills histograms with posterior probability as weight | For advanced/statistical analyses            |
 
-### Bayesian PID: Key Formula
+## Bayesian PID: Key Formula
+
 For each species $H_i$ (e.g., $\pi$, K, p, e), the Bayesian posterior probability is given by:
-$$
-P(H_i \mid \vec{S}) = \frac{P(\vec{S} \mid H_i) \cdot C(H_i)}{\sum_k P(\vec{S} \mid H_k) \cdot C(H_k)}
-$$
+
+$P(H_i \mid \vec{S}) = \dfrac{P(\vec{S} \mid H_i) \cdot C(H_i)}{\sum_k P(\vec{S} \mid H_k) \cdot C(H_k)}$
+
 Where:
 - $\vec{S}$ is the vector of detector PID signals (e.g., TPC $dE/dx$, TOF time)
 - $P(\vec{S} \mid H_i)$ is the likelihood of observing the signals given species $H_i$
 - $C(H_i)$ is the prior probability for species $H_i$
 
 Assuming Gaussian detector responses, the likelihood for each detector $\alpha$ (TPC or TOF) is:
-$$
-P(S_\alpha \mid H_i) \propto \exp\left(-\frac{1}{2} n\sigma_{i,\alpha}^2\right)
-$$
+
+$P(S_\alpha \mid H_i) \propto \exp\left(-\frac{1}{2} n\sigma_{i,\alpha}^2\right)$
+
 Thus, the combined likelihood (assuming independence) becomes:
-$$
-P(\vec{S} \mid H_i) \propto \exp\left(-\frac{1}{2} \left[n\sigma_{i,\text{TPC}}^2 + n\sigma_{i,\text{TOF}}^2\right]\right)
-$$
+
+$P(\vec{S} \mid H_i) \propto \exp\left(-\frac{1}{2} \left[n\sigma_{i,\text{TPC}}^2 + n\sigma_{i,\text{TOF}}^2\right]\right)$
+
 These $n\sigma$ values are computed by O2Physics and used directly in the Bayesian PID calculation.
+
