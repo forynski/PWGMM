@@ -100,6 +100,14 @@ The associated analysis task ([myExampleTaskPID.cxx](myExampleTaskPID.cxx)) incl
 - Per-collision particle statistics allow monitoring particle production per event for performance studies
 - Bayesian PID enables probabilistic species assignment using detector response functions and user-defined priors
 
+## Summary Table: nσ vs Bayesian PID
+
+| Method               | What it does                                  | Pros/Cons                                    |
+|----------------------|-----------------------------------------------|----------------------------------------------|
+| **nσ cut**           | Selects if $n\sigma$ is within PID threshold   | Simple and fast, but only uses one detector  |
+| **Bayesian (max)**   | Uses all detectors, selects highest probability species | Higher purity, combines detector information |
+| **Bayesian (weighted)** | Fills histograms with posterior probability as weight | For advanced/statistical analyses            |
+
 ### Bayesian PID: Key Formula
 For each species $H_i$ (e.g., $\pi$, K, p, e), the Bayesian posterior probability is given by:
 $$
